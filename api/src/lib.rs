@@ -1,41 +1,104 @@
-mod db;
-mod graphql;
+#![deny(clippy::disallowed_methods, clippy::suspicious, clippy::style)]
+#![warn(clippy::pedantic, clippy::cargo)]
+#![allow(clippy::module_name_repetitions)]
 
-use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
-use async_graphql_poem::GraphQL;
-use holaplex_rust_boilerplate_core::prelude::*;
-use poem::{get, handler, listener::TcpListener, post, web::Html, IntoResponse, Route, Server};
+pub mod graphql;
+pub mod db;
+pub mod handlers;
 
-use crate::graphql::schema::build_schema;
 
-#[handler]
-async fn playground() -> impl IntoResponse {
-    Html(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
+use db::Connection;
+use hub_core::{
+    anyhow::{Error, Result},
+    clap,
+    prelude::*,
+    uuid::Uuid,
+};
+use poem::{async_trait, FromRequest, Request, RequestBody};
+
+#[derive(Debug, clap::Args)]
+#[command(version, author, about)]
+pub struct Args {
+    #[arg(short, long, env, default_value_t = 3002)]
+    pub port: u16,
+
+    #[command(flatten)]
+    pub db: db::DbArgs,
 }
 
-#[tokio::main]
-pub async fn start() -> Result<()> {
-    if cfg!(debug_assertions) {
-        dotenv::dotenv().ok();
+#[derive(Debug, Clone, Copy)]
+pub struct UserID(Option<Uuid>);
+
+impl TryFrom<&str> for UserID {
+    type Error = Error;
+
+    fn try_from(value: &str) -> Result<Self> {
+        let id = Uuid::from_str(value)?;
+
+        Ok(Self(Some(id)))
     }
+}
 
-    env_logger::builder()
-        .filter_level(if cfg!(debug_assertions) {
-            log::LevelFilter::Debug
-        } else {
-            log::LevelFilter::Info
-        })
-        .parse_default_env()
-        .init();
+#[async_trait]
+impl<'a> FromRequest<'a> for UserID {
+    async fn from_request(req: &'a Request, _body: &mut RequestBody) -> poem::Result<Self> {
+        let id = req
+            .headers()
+            .get("X-USER-ID")
+            .and_then(|value| value.to_str().ok())
+            .map_or(Ok(Self(None)), Self::try_from)?;
 
-    let schema = build_schema().await?;
+        Ok(id)
+    }
+}
 
-    Server::new(TcpListener::bind("127.0.0.1:3001"))
-        .run(
-            Route::new()
-                .at("/graphql", post(GraphQL::new(schema)))
-                .at("/playground", get(playground)),
-        )
-        .await
-        .map_err(Into::into)
+#[derive(Debug, Clone)]
+pub struct UserEmail(Option<String>);
+
+#[async_trait]
+impl<'a> FromRequest<'a> for UserEmail {
+    async fn from_request(req: &'a Request, _body: &mut RequestBody) -> poem::Result<Self> {
+        let id = req
+            .headers()
+            .get("X-USER-EMAIL")
+            .and_then(|value| value.to_str().ok())
+            .map(std::string::ToString::to_string);
+
+        Ok(Self(id))
+    }
+}
+
+#[derive(Clone)]
+pub struct AppState {
+    pub schema: graphql::schema::AppSchema,
+    pub connection: Connection,
+}
+
+impl AppState {
+    #[must_use]
+    pub fn new(
+        schema: graphql::schema::AppSchema,
+        connection: Connection,
+    ) -> Self {
+        Self {
+            schema,
+            connection,
+        }
+    }
+}
+
+pub struct AppContext {
+    pub db: Connection,
+    pub user_id: Option<Uuid>,
+    pub user_email: Option<String>,
+}
+
+impl AppContext {
+    #[must_use] pub fn new(db: Connection, user_id: Option<Uuid>, user_email: Option<String>) -> Self {
+        Self {
+            db,
+            user_id,
+            user_email,
+        }
+    }
 }

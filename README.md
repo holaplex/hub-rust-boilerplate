@@ -6,7 +6,7 @@ Template rust service repository for the Holaplex Hub
 ```
 /api # API server
 /core # shared dependencies such as queries and mutations
-/entity # application database models
+/entity # application database models and graphql objects
 /migration # database migrations
 /src # app entry point
 ```

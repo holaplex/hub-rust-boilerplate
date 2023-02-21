@@ -3,7 +3,10 @@ WORKDIR /app
 
 FROM chef AS planner
 COPY Cargo.* .
-COPY src src
+COPY migration migration
+COPY entity entity
+COPY core core
+COPY api api
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
@@ -12,8 +15,16 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 COPY Cargo.* .
-COPY src src
-RUN cargo build --release
+COPY migration migration
+COPY entity entity
+COPY core core
+COPY api api
+
+FROM builder AS builder-boilerplate-api
+RUN cargo build --release --bin holaplex-rust-boilerplate-api
+
+FROM builder AS builder-migration
+RUN cargo build --release --bin migration
 
 
 FROM debian:bullseye-slim as base
@@ -26,6 +37,11 @@ RUN apt-get update -y && \
   && \
   rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/release/holaplex-hub-rust-boilerplate /usr/local/bin
-ENTRYPOINT [ "/usr/local/bin/holaplex-hub-rust-boilerplate" ]
+FROM base AS boilerplate-api
+COPY --from=builder-boilerplate-api /app/target/release/holaplex-rust-boilerplate-api bin
+CMD ["bin/holaplex-rust-boilerplate-api"]
+
+FROM base AS migrator
+COPY --from=builder-migration /app/target/release/migration bin/
+CMD ["bin/migration"]
 
