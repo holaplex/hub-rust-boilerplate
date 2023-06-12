@@ -40,6 +40,16 @@ RUN apt-get update -y && \
   rm -rf /var/lib/apt/lists/*
 
 FROM base AS boilerplate-api
+ENV TZ=Etc/UTC
+ENV APP_USER=runner
+
+RUN groupadd $APP_USER \
+    && useradd --uid 10000 -g $APP_USER $APP_USER \
+    && mkdir -p bin
+
+RUN chown -R $APP_USER:$APP_USER bin
+
+USER 10000
 COPY --from=builder-boilerplate-api /app/target/release/holaplex-rust-boilerplate-api bin
 CMD ["bin/holaplex-rust-boilerplate-api"]
 
