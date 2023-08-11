@@ -7,14 +7,14 @@ edition = "2021"
 
 [dependencies]
 holaplex-rust-boilerplate-entity = { path = "./../entity" }
-sea-orm = { version = "^0.10.0", features = [
+sea-orm = { version = "^0.10.7", features = [
   "debug-print",
   "runtime-tokio-rustls",
   "sqlx-postgres",
 ] }
 
 [dev-dependencies]
-tokio = { version = "1.20.0", features = ["macros", "rt"] }
+tokio = { version = "1.30.0", features = ["macros", "rt"] }
 
 [features]
 mock = ["sea-orm/mock"]

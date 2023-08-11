@@ -1,13 +1,10 @@
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_poem::{GraphQLRequest, GraphQLResponse};
-
 use poem::{
     handler,
-    web::{
-        Data, Html,
-    }, IntoResponse, Result,
+    web::{Data, Html},
+    IntoResponse, Result,
 };
-
 
 use crate::{AppContext, AppState, UserEmail, UserID};
 

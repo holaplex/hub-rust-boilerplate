@@ -2,10 +2,9 @@
 #![warn(clippy::pedantic, clippy::cargo)]
 #![allow(clippy::module_name_repetitions)]
 
-pub mod graphql;
 pub mod db;
+pub mod graphql;
 pub mod handlers;
-
 
 use db::Connection;
 use hub_core::{
@@ -76,14 +75,8 @@ pub struct AppState {
 
 impl AppState {
     #[must_use]
-    pub fn new(
-        schema: graphql::schema::AppSchema,
-        connection: Connection,
-    ) -> Self {
-        Self {
-            schema,
-            connection,
-        }
+    pub fn new(schema: graphql::schema::AppSchema, connection: Connection) -> Self {
+        Self { schema, connection }
     }
 }
 
@@ -94,7 +87,8 @@ pub struct AppContext {
 }
 
 impl AppContext {
-    #[must_use] pub fn new(db: Connection, user_id: Option<Uuid>, user_email: Option<String>) -> Self {
+    #[must_use]
+    pub fn new(db: Connection, user_id: Option<Uuid>, user_email: Option<String>) -> Self {
         Self {
             db,
             user_id,
