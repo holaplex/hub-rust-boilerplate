@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use hub_core::{anyhow::Result, clap, prelude::*};
 pub use holaplex_rust_boilerplate_core::sea_orm::{ConnectOptions, Database, DatabaseConnection};
+use hub_core::{anyhow::Result, clap, prelude::*};
 
 /// Arguments for establishing a database connection
 #[derive(Debug, clap::Args)]

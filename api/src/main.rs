@@ -1,5 +1,3 @@
-
-
 use holaplex_rust_boilerplate_api::{
     db::{Connection, DbArgs},
     graphql::schema::build_schema,
@@ -7,9 +5,7 @@ use holaplex_rust_boilerplate_api::{
     AppState,
 };
 use hub_core::{clap, prelude::*};
-use poem::{
-    get, listener::TcpListener, middleware::AddData, post, EndpointExt, Route, Server,
-};
+use poem::{get, listener::TcpListener, middleware::AddData, post, EndpointExt, Route, Server};
 
 #[derive(Debug, clap::Args)]
 #[command(version, author, about)]
